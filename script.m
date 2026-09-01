@@ -1,29 +1,26 @@
 clc;
 clear;
-close all;
 
 %% 1. CARGAR DATOS DESDE JSON
 
 entrada = double(jsondecode(fileread('entradas.json')))';
 salida  = double(jsondecode(fileread('salidas.json')))';
 
-%% 2. VERIFICAR DIMENSIONES
+%% 2. VERIFICAR DATOS
 
 disp('==========================================');
 disp('DATOS DE ENTRADA');
 disp('==========================================');
 
 disp(entrada);
-fprintf('Dimensiones de entrada: %d x %d\n', ...
-    size(entrada,1), size(entrada,2));
+fprintf('Dimensiones: %d x %d\n', size(entrada,1), size(entrada,2));
 
 disp('==========================================');
 disp('DATOS DE SALIDA');
 disp('==========================================');
 
 disp(salida);
-fprintf('Dimensiones de salida: %d x %d\n', ...
-    size(salida,1), size(salida,2));
+fprintf('Dimensiones: %d x %d\n', size(salida,1), size(salida,2));
 
 if ~isequal(size(entrada), [20 10])
     error('La entrada debe ser de 20 x 10.');
@@ -55,7 +52,7 @@ disp('==========================================');
 
 disp('ENTRENAMIENTO FINALIZADO');
 
-%% 5. EVALUACION DE LOS PATRONES ORIGINALES
+%% 5. EVALUAR DIGITOS ORIGINALES
 
 resultado = red(entrada);
 
@@ -93,8 +90,7 @@ for i = 1:10
         estado = 'INCORRECTO';
     end
 
-    fprintf( ...
-        'Digito %d -> Esperado: %d | Reconocido: %d | %s\n', ...
+    fprintf('Digito %d -> Esperado: %d | Reconocido: %d | %s\n', ...
         esperado, esperado, reconocido, estado);
 end
 
@@ -103,99 +99,142 @@ porcentaje = correctos / 10 * 100;
 fprintf('\nCorrectos: %d de 10\n', correctos);
 fprintf('Porcentaje: %.2f%%\n', porcentaje);
 
-%% 7. PRUEBAS DE ROBUSTEZ
+%% 7. PRUEBA CON 1 BIT ALTERADO
 
 disp('==========================================');
-disp('PRUEBAS DE ROBUSTEZ');
+disp('PRUEBA CON 1 BIT ALTERADO');
 disp('==========================================');
 
-digitosPrueba = [0 4 8];
-nivelesRuido = [1 2 3];
+% Digito 0
+vector = entrada(:,1);
+vector(5) = 1 - vector(5);
 
-resultadosRuido = zeros(3,3);
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
 
-for n = 1:length(nivelesRuido)
+fprintf('Digito esperado: 0 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
 
-    bits = nivelesRuido(n);
-    correctosRuido = 0;
+% Digito 4
+vector = entrada(:,5);
+vector(12) = 1 - vector(12);
 
-    fprintf('\n--- %d BIT(S) ALTERADO(S) ---\n', bits);
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
 
-    for d = 1:length(digitosPrueba)
+fprintf('Digito esperado: 4 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
 
-        digito = digitosPrueba(d);
+% Digito 8
+vector = entrada(:,9);
+vector(5) = 1 - vector(5);
 
-        patronOriginal = entrada(:, digito + 1);
-        patronRuido = patronOriginal;
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
 
-        posiciones = randperm(20, bits);
+fprintf('Digito esperado: 8 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
 
-        for p = 1:bits
-            patronRuido(posiciones(p)) = ...
-                1 - patronRuido(posiciones(p));
-        end
-
-        resultadoRuido = red(patronRuido);
-
-        [~, clase] = max(resultadoRuido);
-        reconocidoRuido = clase - 1;
-
-        if reconocidoRuido == digito
-            estado = 'CORRECTO';
-            correctosRuido = correctosRuido + 1;
-        else
-            estado = 'INCORRECTO';
-        end
-
-        fprintf( ...
-            'Digito %d | Posiciones: ', digito);
-
-        fprintf('%d ', posiciones);
-
-        fprintf( ...
-            '| Reconocido: %d | %s\n', ...
-            reconocidoRuido, estado);
-
-        disp('Matriz 5x4 con ruido:');
-
-        matrizRuido = reshape(patronRuido, 4, 5)';
-        disp(matrizRuido);
-
-    end
-
-    porcentajeRuido = ...
-        correctosRuido / length(digitosPrueba) * 100;
-
-    resultadosRuido(n,:) = ...
-        [bits correctosRuido porcentajeRuido];
-
-    fprintf( ...
-        'Resultado: %d/%d correctos - %.2f%%\n', ...
-        correctosRuido, ...
-        length(digitosPrueba), ...
-        porcentajeRuido);
-end
-
-%% 8. RESUMEN DE ROBUSTEZ
+%% 8. PRUEBA CON 2 BITS ALTERADOS
 
 disp('==========================================');
-disp('RESUMEN DE ROBUSTEZ');
+disp('PRUEBA CON 2 BITS ALTERADOS');
 disp('==========================================');
 
-fprintf('Bits | Correctos | Porcentaje\n');
-fprintf('-----------------------------\n');
+% Digito 0
+vector = entrada(:,1);
+vector(2) = 1 - vector(2);
+vector(14) = 1 - vector(14);
 
-for i = 1:3
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
 
-    fprintf( ...
-        '%4d | %9d | %.2f%%\n', ...
-        resultadosRuido(i,1), ...
-        resultadosRuido(i,2), ...
-        resultadosRuido(i,3));
+fprintf('Digito esperado: 0 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
 
-end
+% Digito 4
+vector = entrada(:,5);
+vector(12) = 1 - vector(12);
+vector(20) = 1 - vector(20);
 
-%% 9. PESOS Y BIAS
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
+
+fprintf('Digito esperado: 4 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
+
+% Digito 8
+vector = entrada(:,9);
+vector(15) = 1 - vector(15);
+vector(17) = 1 - vector(17);
+
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
+
+fprintf('Digito esperado: 8 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
+
+%% 9. PRUEBA CON 3 BITS ALTERADOS
+
+disp('==========================================');
+disp('PRUEBA CON 3 BITS ALTERADOS');
+disp('==========================================');
+
+% Digito 0
+vector = entrada(:,1);
+vector(11) = 1 - vector(11);
+vector(15) = 1 - vector(15);
+vector(20) = 1 - vector(20);
+
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
+
+fprintf('Digito esperado: 0 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
+
+% Digito 4
+vector = entrada(:,5);
+vector(1) = 1 - vector(1);
+vector(12) = 1 - vector(12);
+vector(19) = 1 - vector(19);
+
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
+
+fprintf('Digito esperado: 4 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
+
+% Digito 8
+vector = entrada(:,9);
+vector(3) = 1 - vector(3);
+vector(9) = 1 - vector(9);
+vector(17) = 1 - vector(17);
+
+resultadoRuido = red(vector);
+[~, clase] = max(resultadoRuido);
+reconocido = clase - 1;
+
+fprintf('Digito esperado: 8 | Reconocido: %d\n', reconocido);
+disp('Vector alterado:');
+disp(vector');
+
+%% 10. PESOS Y BIAS
 
 disp('==========================================');
 disp('PESOS CAPA OCULTA');
@@ -221,16 +260,14 @@ disp('==========================================');
 
 disp(red.b{2});
 
-%% 10. GRAFICA DEL ENTRENAMIENTO
+%% 11. GRAFICA DEL ENTRENAMIENTO
 
 figure;
 plotperform(tr);
 title('Error de entrenamiento');
-xlabel('Epocas');
-ylabel('Error');
 grid on;
 
-%% 11. RESUMEN FINAL
+%% 12. RESUMEN FINAL
 
 disp('==========================================');
 disp('RESUMEN FINAL');
@@ -238,7 +275,7 @@ disp('==========================================');
 
 fprintf('Arquitectura: 20 - 10 - 10\n');
 fprintf('Capa oculta: logsig\n');
-fprintf('Capa salida: purelin\n');
+fprintf('Capa de salida: purelin\n');
 fprintf('Entrenamiento: trainlm\n');
 fprintf('Error final: %.10f\n', errorFinal);
 fprintf('Reconocimiento: %.2f%%\n', porcentaje);
